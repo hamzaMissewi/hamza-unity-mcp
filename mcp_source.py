@@ -164,7 +164,9 @@ def main() -> None:
             f"Error: '{PKG_NAME}' not found in manifest dependencies.", file=sys.stderr)
         sys.exit(1)
 
-    print(f"\nUpdating {PKG_NAME} → {chosen}")
+    # print(f"\nUpdating {PKG_NAME} → {chosen}")
+    print(f"\nUpdating {PKG_NAME} to {chosen}")
+
     deps[PKG_NAME] = chosen
     data["dependencies"] = deps
     write_json(manifest_path, data)

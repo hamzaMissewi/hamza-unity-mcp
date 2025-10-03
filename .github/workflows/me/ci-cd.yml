@@ -1,0 +1,62 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  DOTNET_VERSION: "8.0.x"
+  UNITY_VERSION: "2021.3.45f1"
+  UNITY_IMAGE: unityci/editor:ubuntu-$UNITY_VERSION-linux-il2cpp-3
+
+jobs:
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Test
+        run: dotnet test --no-build --verbosity normal --configuration Release
+
+  unity-tests:
+    name: Unity Tests
+    runs-on: ubuntu-latest
+    container: ${{ env.UNITY_IMAGE }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run Unity Tests
+        run: |
+          /opt/unity/Editor/Unity \
+            -batchmode \
+            -nographics \
+            -projectPath ./TestProjects/UnityMCPTests \
+            -runTests \
+            -testResults /tmp/test-results.xml \
+            -testPlatform playmode \
+            -logFile /dev/stdout
+
+      - name: Publish Test Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: /tmp/test-results.xml
